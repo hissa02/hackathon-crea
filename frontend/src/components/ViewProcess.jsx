@@ -1,5 +1,4 @@
 // src/components/ViewProcess.jsx
-import StepSitac       from './StepSitac.jsx'
 import StepUpload      from './StepUpload.jsx'
 import ProcessingState from './ProcessingState.jsx'
 import DocumentViewer  from './DocumentViewer.jsx'
@@ -8,8 +7,6 @@ import { documents }   from '../data/documents.js'
 
 export default function ViewProcess({
   uploadState, progress,
-  sitacArt, setSitacArt,
-  isArtLinked, setIsArtLinked, handleLinkArt,
   fileInputRef, triggerFileSelect, handleFileChange,
   resetProcess,
   rightTab, setRightTab,
@@ -18,13 +15,28 @@ export default function ViewProcess({
 }) {
   return (
     <div className="max-w-6xl mx-auto flex flex-col h-full min-h-[600px] fade-in">
+      
+      {/* 🚀 O SEGREDO ESTÁ AQUI: O input invisível agora fica na raiz, então ele nunca some! */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleFileChange}
+        accept=".pdf,.jpg,.jpeg,.png"
+        multiple
+      />
+
+      {/* HEADER */}
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Validação de Atestado Técnico e ART</h1>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Validação de Atestado Técnico
+          </h1>
           <p className="text-slate-500 mt-1">
-            Cruze os PDFs comprobatórios diretamente com a página da ART no sistema do CREA.
+            Analise automaticamente documentos técnicos utilizando IA.
           </p>
         </div>
+
         {uploadState === 'done' && (
           <button
             onClick={resetProcess}
@@ -35,35 +47,34 @@ export default function ViewProcess({
         )}
       </div>
 
+      {/* ETAPA INICIAL */}
       {uploadState === 'idle' && (
         <div className="flex flex-col space-y-6">
-          <StepSitac
-            sitacArt={sitacArt} setSitacArt={setSitacArt}
-            isArtLinked={isArtLinked} setIsArtLinked={setIsArtLinked}
-            handleLinkArt={handleLinkArt}
-          />
           <StepUpload
-            isArtLinked={isArtLinked}
-            fileInputRef={fileInputRef}
+            isArtLinked={true}
             triggerFileSelect={triggerFileSelect}
-            handleFileChange={handleFileChange}
           />
         </div>
       )}
 
+      {/* PROCESSANDO */}
       {(uploadState === 'uploading' || uploadState === 'processing') && (
         <ProcessingState uploadState={uploadState} progress={progress} />
       )}
 
+      {/* RESULTADO */}
       {uploadState === 'done' && (
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 fade-in h-full">
           <DocumentViewer
             documents={documents}
             selectedDocument={selectedDocument}
             setSelectedDocument={setSelectedDocument}
+            triggerFileSelect={triggerFileSelect} 
           />
+
           <AutomaticReview
-            rightTab={rightTab} setRightTab={setRightTab}
+            rightTab={rightTab}
+            setRightTab={setRightTab}
             validationSteps={validationSteps}
             toggleComment={toggleComment}
             handleJustificationChange={handleJustificationChange}

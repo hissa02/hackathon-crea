@@ -29,10 +29,7 @@ export default function App() {
   }
 
   const triggerFileSelect = () => {
-    if (!isArtLinked) {
-      alert('Atenção: Você precisa vincular a ART no Passo 1 primeiro para a IA saber com o que comparar!')
-      return
-    }
+    // Verificação de ART removida daqui! Agora ele abre o input de arquivo direto.
     if (fileInputRef.current) fileInputRef.current.click()
   }
 

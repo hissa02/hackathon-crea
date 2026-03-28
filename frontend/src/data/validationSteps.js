@@ -22,7 +22,9 @@ export const initialValidationSteps = [
     id: 4,
     title: '4. Endereço da Obra',
     desc: 'DIVERGÊNCIA ENCONTRADA: O Atestado indica "Rua das Flores, 100", mas a ART indica "Avenida Principal, S/N". Ação sugerida: INVALIDAR.',
-    status: 'error', justification: '', showComment: true,
+    status: 'error', 
+    justification: 'Endereço divergente: O Atestado indica "Rua das Flores, 100", mas a ART vinculada indica "Avenida Principal, S/N". Favor retificar o atestado ou a ART para que os endereços coincidam perfeitamente.', 
+    showComment: true,
   },
   {
     id: 5,
@@ -33,8 +35,10 @@ export const initialValidationSteps = [
   {
     id: 6,
     title: '6. Serviço Executado',
-    desc: 'Os serviços listados no atestado possuem o mesmo sentido técnico da observação da ART.',
-    status: 'pass', justification: '', showComment: false,
+    desc: 'DIVERGÊNCIA ENCONTRADA: Ausência de quantitativos no atestado que constam na ART.',
+    status: 'error', 
+    justification: 'Falta de quantitativos: Os serviços listados no atestado não possuem os quantitativos que foram descritos na ART. Favor detalhar as unidades e quantidades executadas no corpo do atestado.', 
+    showComment: true,
   },
   {
     id: 7,
@@ -62,8 +66,11 @@ export const initialValidationSteps = [
   },
   {
     id: 11,
-    title: '11. Verificação Externa (Google)',
-    desc: 'Foram encontrados indícios da obra realizada através de pesquisa no Google, compatíveis com o período da ART.',
-    status: 'pass', justification: '', showComment: false,
+    title: '11. Verificação de Localização (Google Maps)',
+    desc: 'ALERTA DE GEOLOCALIZAÇÃO: Não foi possível confirmar visualmente a existência da obra no endereço informado através do Google Maps/Street View.',
+    status: 'error', 
+    // A IA já cria a exigência da foto com as coordenadas!
+    justification: 'Verificação visual no Google Maps falhou: Não foi possível localizar indícios da obra no endereço informado através de imagens de satélite ou Street View. Para comprovação da execução, favor apresentar um relatório fotográfico contendo fotos georreferenciadas (com registro de data e coordenadas GPS) do local da obra.', 
+    showComment: true,
   },
 ]
