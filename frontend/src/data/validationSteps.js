@@ -9,12 +9,12 @@ export const initialValidationSteps = [
   {
     id: 2,
     title: '2. Responsável Técnico',
-    desc: 'O nome do responsável técnico e a titulação conferem exatamente com a ART vinculada.',
+    desc: 'O nome do responsável técnico e a titulação conferem exatamente com a ART vinculada, faz uma análise do RNP.',
     status: 'pass', justification: '', showComment: false,
   },
   {
     id: 3,
-    title: '3. Contratante (Empresa ou Pessoa Física)',
+    title: '3. Contratante/ Proprietário (Empresa ou Pessoa Física)',
     desc: 'A empresa contratada foi verificada no atestado e na ART. Identificada como Pessoa Jurídica.',
     status: 'pass', justification: '', showComment: false,
   },
@@ -49,7 +49,7 @@ export const initialValidationSteps = [
   {
     id: 8,
     title: '8. Laudo Técnico (se houver)',
-    desc: 'Nenhum laudo técnico identificado neste upload (Não é obrigatório para este serviço).',
+    desc: 'Nenhum laudo técnico identificado neste upload (Lembrando que a declaração não precisa de laudo, sendo opcional para este serviço).',
     status: 'neutral', justification: '', showComment: false,
   },
   {
@@ -73,4 +73,4 @@ export const initialValidationSteps = [
     justification: 'Verificação visual no Google Maps falhou: Não foi possível localizar indícios da obra no endereço informado através de imagens de satélite ou Street View. Para comprovação da execução, favor apresentar um relatório fotográfico contendo fotos georreferenciadas (com registro de data e coordenadas GPS) do local da obra.', 
     showComment: true,
   },
-]
+];

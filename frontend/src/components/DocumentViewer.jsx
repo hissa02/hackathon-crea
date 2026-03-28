@@ -1,6 +1,8 @@
 // src/components/DocumentViewer.jsx
 import React from 'react';
 
+// --- SUBCOMPONENTES DE VISUALIZAÇÃO DE PDF ---
+
 function PdfAtestado() {
   return (
     <>
@@ -33,6 +35,35 @@ function PdfContrato() {
       <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
         <p>CONTRATANTE: Prefeitura Municipal... CONTRATADA: Construtora Inovação LTDA.</p>
         <p>Objeto: Execução de fundação profunda e concretagem.</p>
+      </div>
+    </>
+  )
+}
+
+function PdfDeclaracao() {
+  return (
+    <>
+      <div className="text-center font-bold text-lg mb-8 border-b pb-4">
+        DECLARAÇÃO DE VERACIDADE
+      </div>
+      <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
+        <p>Declaro, sob as penas da lei, que as informações contidas nos documentos apresentados são verdadeiras...</p>
+        <p>Assinatura: ___________________________</p>
+      </div>
+    </>
+  )
+}
+
+function PdfArtLaudo() {
+  return (
+    <>
+      <div className="text-center font-bold text-lg mb-8 border-b pb-4">
+        ART DO LAUDO TÉCNICO
+      </div>
+      <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
+        <p>Conselho Regional de Engenharia e Agronomia do Maranhão</p>
+        <p>Atividade: Laudo Técnico de Engenharia</p>
+        <p>Nº da ART: <strong>MA20260098765</strong></p>
       </div>
     </>
   )
@@ -97,11 +128,18 @@ function EmptyDocumentState({ docName, triggerFileSelect }) {
 }
 
 export default function DocumentViewer({ documents, selectedDocument, setSelectedDocument, triggerFileSelect }) {
+  
+  // Verifica dinamicamente se existe um laudo anexado para tornar a ART do Laudo obrigatória
+  const hasLaudo = documents.some(doc => doc.id === 'laudo');
+
+  // Nova ordem e novos documentos inseridos
   const fixedTabs = [
     { id: 'atestado', name: 'Atestado Técnico', icon: 'ph-file-pdf text-red-500', isRequired: true },
-    { id: 'contrato', name: 'Contrato', icon: 'ph-file-text text-blue-500', isRequired: true },
     { id: 'sitac', name: 'Página da ART', icon: 'ph-browser text-green-500', isRequired: true },
-    { id: 'laudo', name: 'Laudo (Opcional)', icon: 'ph-files text-amber-500', isRequired: false }
+    { id: 'contrato', name: 'Contrato', icon: 'ph-file-text text-blue-500', isRequired: true },
+    { id: 'declaracao', name: 'Declaração', icon: 'ph-file-doc text-purple-500', isRequired: true },
+    { id: 'laudo', name: 'Laudo (Opcional)', icon: 'ph-files text-amber-500', isRequired: false },
+    { id: 'art_laudo', name: 'ART do Laudo', icon: 'ph-file-pdf text-emerald-500', isRequired: hasLaudo }
   ]
 
   const currentTab = fixedTabs.find(tab => tab.id === selectedDocument) || fixedTabs[0]
@@ -142,8 +180,12 @@ export default function DocumentViewer({ documents, selectedDocument, setSelecte
             <div className="absolute top-4 right-4 bg-slate-800 text-white px-2 py-1 rounded text-[10px] font-bold z-10">
               Página 1 / 1
             </div>
+            {/* Renderização dinâmica dos PDFs */}
             {selectedDocument === 'atestado' && <PdfAtestado />}
             {selectedDocument === 'contrato' && <PdfContrato />}
+            {selectedDocument === 'declaracao' && <PdfDeclaracao />}
+            {selectedDocument === 'art_laudo' && <PdfArtLaudo />}
+            {/* Se você tiver um componente para o 'laudo' depois, é só adicionar aqui! */}
           </div>
         )}
 
