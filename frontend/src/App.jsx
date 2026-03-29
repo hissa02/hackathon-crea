@@ -1,162 +1,116 @@
-import React, { useState, useRef } from 'react';
-import ViewProcess from './components/ViewProcess';
+// src/App.jsx
+import React, { useState, useRef } from 'react'
+import ViewProcess from './components/ViewProcess'
+import { initialValidationSteps } from './data/validationSteps'
 
-function App() {
-  // --- ESTADOS GLOBAIS DO PROCESSO ---
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeMenu, setActiveMenu] = useState('analise');
-  const [uploadState, setUploadState] = useState('idle'); // idle, uploading, done
-  const [progress, setProgress] = useState(0);
-  const [selectedDocument, setSelectedDocument] = useState(null);
-  const [documents, setDocuments] = useState([]);
-  const [artData, setArtData] = useState(null); // Dados REAIS vindos do HTML
-  const [reportStatus, setReportStatus] = useState('idle'); // idle, sending, sent
+export default function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true) 
 
-  // Referência para o input de arquivo escondido
-  const fileInputRef = useRef(null);
+  const [activeMenu, setActiveMenu] = useState('analise') 
+  const [uploadState, setUploadState] = useState('idle')
+  const [progress, setProgress] = useState(0)
+  const [selectedDocument, setSelectedDocument] = useState('atestado')
+  const fileInputRef = useRef(null)
+  const [documents, setDocuments] = useState([])
+  
+  const [validationSteps, setValidationSteps] = useState(initialValidationSteps)
+  const [artData, setArtData] = useState(null)
+  const [artNumber, setArtNumber] = useState('')
 
-  // --- PASSOS DE VALIDAÇÃO (SIMULADOS PELA IA) ---
-  const [validationSteps, setValidationSteps] = useState([
-    { 
-      id: 1, 
-      title: 'Vigência da ART', 
-      desc: 'Verificando se a ART está baixada ou ativa no sistema SITAC.', 
-      status: 'pass', 
-      showComment: false, 
-      justification: '' 
-    },
-    { 
-      id: 2, 
-      title: 'Coerência de Atividades', 
-      desc: 'Cruzando atividades da ART com as descritas no Atestado Técnico.', 
-      status: 'error', 
-      showComment: true, 
-      justification: 'A quantidade de alvenaria no atestado (200m²) diverge da ART (250m²).' 
-    },
-    { 
-      id: 3, 
-      title: 'Assinaturas Digitais', 
-      desc: 'Validando autenticidade das assinaturas do contratante e profissional.', 
-      status: 'pass', 
-      showComment: false, 
-      justification: '' 
-    }
-  ]);
+  // ESTADO NOVO: Controle do envio do relatório
+  const [reportStatus, setReportStatus] = useState('idle') // 'idle', 'sending', 'sent'
 
-  // --- FUNÇÕES DE LÓGICA ---
+  const toggleSidebar = () => {
+    setIsSidebarOpen(prev => !prev);
+  }
 
-  // 1. BUSCA REAL DA ART NO BACKEND
-  const fetchArtData = async (numero) => {
-    if (!numero) return alert("Por favor, digite o número da ART.");
+  const fetchArtData = (numero) => {
+    if (!numero) return;
+    setTimeout(() => {
+      setArtData({ profissional: 'Eng. Carlos Eduardo Silva' });
+      setArtNumber(numero);
+    }, 500); 
+  }
 
-    try {
-      const response = await fetch(`http://localhost:3001/api/art/${numero}`);
-      const data = await response.json();
-
-      if (data.success) {
-        // Define os dados extraídos do HTML real
-        setArtData({
-          numero_art: data.numero_art,
-          profissional: data.profissional,
-          status: data.status
-        });
-        console.log("ART Localizada:", data.profissional);
-      } else {
-        alert(data.message);
-        setArtData(null);
-      }
-    } catch (error) {
-      console.error("Erro ao conectar com o backend:", error);
-      alert("Erro ao conectar com o servidor. Verifique se o backend está rodando na porta 3001.");
-    }
-  };
-
-  // 2. CONTROLE DE UPLOAD
-  const triggerFileSelect = () => fileInputRef.current?.click();
+  const triggerFileSelect = () => { 
+    if (fileInputRef.current) fileInputRef.current.click() 
+  }
 
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
+    const files = e.target.files
+    if (!files || files.length === 0 || !artNumber) return
 
-    setUploadState('uploading');
-    
-    // Simulação de progresso de upload
-    let interval = setInterval(() => {
-      setProgress(prev => {
+    setUploadState('uploading')
+    setProgress(0)
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
         if (prev >= 100) {
-          clearInterval(interval);
-          setUploadState('done');
+          clearInterval(interval)
+          setUploadState('done')
           
-          // Cria as URLs para visualização no Iframe
-          const newDocs = files.map(file => ({
-            id: Math.random().toString(36).substr(2, 9),
-            name: file.name,
-            url: URL.createObjectURL(file)
-          }));
-          
-          setDocuments(newDocs);
-          return 100;
+          setDocuments([
+            { id: 'atestado', name: 'Atestado Técnico' },
+            { id: 'pagina_art', name: 'Página da ART' },
+            { id: 'contrato', name: 'Contrato' },
+            { id: 'declaracao', name: 'Declaração' },
+            { id: 'laudo', name: 'Laudo Técnico' },
+            { id: 'art_laudo', name: 'ART do Laudo' }
+          ])
+
+          setValidationSteps(steps => steps.map(step => {
+            if (step.id === 4) return { ...step, status: 'error', showComment: true };
+            if (step.id === 6) return { ...step, status: 'error', showComment: true };
+            return step;
+          }))
+
+          return 100
         }
-        return prev + 10;
-      });
-    }, 150);
-  };
+        return prev + 20 
+      })
+    }, 400) 
+  }
 
-  // 3. RESETAR O PROCESSO
   const resetProcess = () => {
-    setUploadState('idle');
-    setProgress(0);
-    setDocuments([]);
-    setArtData(null);
-    setSelectedDocument(null);
-  };
+    setUploadState('idle')
+    setProgress(0)
+    setDocuments([])
+    setArtData(null)
+    setArtNumber('')
+    setSelectedDocument('atestado')
+    setReportStatus('idle') // Reseta o botão de enviar relatório
+    setValidationSteps(initialValidationSteps.map(step => ({ ...step, justification: step.justification, showComment: step.status === 'error' })))
+  }
 
-  // 4. AÇÕES DO ANALISTA
   const toggleComment = (id) => {
-    setValidationSteps(steps => steps.map(s => 
-      s.id === id ? { ...s, showComment: !s.showComment } : s
-    ));
-  };
+    setValidationSteps(steps => steps.map(step => step.id === id ? { ...step, showComment: !step.showComment } : step))
+  }
 
   const handleJustificationChange = (id, text) => {
-    setValidationSteps(steps => steps.map(s => 
-      s.id === id ? { ...s, justification: text } : s
-    ));
-  };
+    setValidationSteps(steps => steps.map(step => step.id === id ? { ...step, justification: text } : step))
+  }
 
+  // FUNÇÃO NOVA: Simula o envio do relatório
   const handleSendReport = () => {
     setReportStatus('sending');
-    setTimeout(() => setReportStatus('sent'), 1500);
-  };
+    setTimeout(() => {
+      setReportStatus('sent');
+    }, 1500); // Demora 1.5 segundos simulando envio
+  }
 
-  // --- RENDERIZAÇÃO ---
   return (
-    <ViewProcess 
-      // Estados
-      isSidebarOpen={isSidebarOpen}
-      toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-      activeMenu={activeMenu}
-      setActiveMenu={setActiveMenu}
-      uploadState={uploadState}
-      progress={progress}
-      fileInputRef={fileInputRef}
-      documents={documents}
-      selectedDocument={selectedDocument}
-      setSelectedDocument={setSelectedDocument}
-      artData={artData}
-      validationSteps={validationSteps}
-      reportStatus={reportStatus}
-      
-      // Funções
-      triggerFileSelect={triggerFileSelect}
-      handleFileChange={handleFileChange}
-      fetchArtData={fetchArtData}
-      resetProcess={resetProcess}
-      toggleComment={toggleComment}
-      handleJustificationChange={handleJustificationChange}
-      handleSendReport={handleSendReport}
-    />
-  );
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-800 relative">
+      <ViewProcess
+        isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} 
+        activeMenu={activeMenu} setActiveMenu={setActiveMenu}
+        uploadState={uploadState} progress={progress} fileInputRef={fileInputRef}
+        triggerFileSelect={triggerFileSelect} handleFileChange={handleFileChange}
+        resetProcess={resetProcess} validationSteps={validationSteps} 
+        toggleComment={toggleComment} handleJustificationChange={handleJustificationChange}
+        selectedDocument={selectedDocument} setSelectedDocument={setSelectedDocument} documents={documents}
+        artData={artData} fetchArtData={fetchArtData}
+        reportStatus={reportStatus} handleSendReport={handleSendReport} /* Props Novas */
+      />
+    </div>
+  )
 }
-
-export default App;
