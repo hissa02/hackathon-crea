@@ -48,7 +48,7 @@ export default function StepSitac({ sitacArt, setSitacArt, isArtLinked, setIsArt
               Página da ART / Profissional Vinculada
             </h4>
             <div className="text-sm text-green-700 mt-1 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
-              <p><b>Profissional:</b> Eng. Carlos Eduardo Silva</p>
+              <p><b>Profissional:</b> Eng.  Marcelo Ribeiro Costa</p>
               <p>
                 <b>Status:</b>{' '}
                 <span className="bg-green-200 px-2 py-0.5 rounded text-xs">Ativo/Adimplente</span>
