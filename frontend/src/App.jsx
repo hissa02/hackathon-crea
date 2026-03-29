@@ -1,130 +1,162 @@
-// src/App.jsx
-import { useState, useRef } from 'react'
-import Sidebar       from './components/Sidebar.jsx'
-import Topbar        from './components/Topbar.jsx'
-import ViewProcess   from './components/ViewProcess.jsx'
-import ViewHistory   from './components/ViewHistory.jsx'
-import ViewReports   from './components/ViewReports.jsx'
-import { initialValidationSteps } from './data/validationSteps.js'
+import React, { useState, useRef } from 'react';
+import ViewProcess from './components/ViewProcess';
 
-export default function App() {
-  const [activeTab, setActiveTab]           = useState('process')
-  const [uploadState, setUploadState]       = useState('idle') // idle | uploading | processing | done
-  const [progress, setProgress]             = useState(0)
-  const [rightTab, setRightTab]             = useState('validacao')
-  const [selectedDocument, setSelectedDocument] = useState('atestado')
+function App() {
+  // --- ESTADOS GLOBAIS DO PROCESSO ---
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [activeMenu, setActiveMenu] = useState('analise');
+  const [uploadState, setUploadState] = useState('idle'); // idle, uploading, done
+  const [progress, setProgress] = useState(0);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [artData, setArtData] = useState(null); // Dados REAIS vindos do HTML
+  const [reportStatus, setReportStatus] = useState('idle'); // idle, sending, sent
 
-  const fileInputRef = useRef(null)
+  // Referência para o input de arquivo escondido
+  const fileInputRef = useRef(null);
 
-  const [sitacArt, setSitacArt]       = useState('')
-  const [isArtLinked, setIsArtLinked] = useState(false)
+  // --- PASSOS DE VALIDAÇÃO (SIMULADOS PELA IA) ---
+  const [validationSteps, setValidationSteps] = useState([
+    { 
+      id: 1, 
+      title: 'Vigência da ART', 
+      desc: 'Verificando se a ART está baixada ou ativa no sistema SITAC.', 
+      status: 'pass', 
+      showComment: false, 
+      justification: '' 
+    },
+    { 
+      id: 2, 
+      title: 'Coerência de Atividades', 
+      desc: 'Cruzando atividades da ART com as descritas no Atestado Técnico.', 
+      status: 'error', 
+      showComment: true, 
+      justification: 'A quantidade de alvenaria no atestado (200m²) diverge da ART (250m²).' 
+    },
+    { 
+      id: 3, 
+      title: 'Assinaturas Digitais', 
+      desc: 'Validando autenticidade das assinaturas do contratante e profissional.', 
+      status: 'pass', 
+      showComment: false, 
+      justification: '' 
+    }
+  ]);
 
-  const [validationSteps, setValidationSteps] = useState(initialValidationSteps)
+  // --- FUNÇÕES DE LÓGICA ---
 
-  // ── Handlers ──────────────────────────────────────────
+  // 1. BUSCA REAL DA ART NO BACKEND
+  const fetchArtData = async (numero) => {
+    if (!numero) return alert("Por favor, digite o número da ART.");
 
-  const handleLinkArt = () => {
-    if (sitacArt.trim() === '') setSitacArt('MA20250012345')
-    setIsArtLinked(true)
-  }
+    try {
+      const response = await fetch(`http://localhost:3001/api/art/${numero}`);
+      const data = await response.json();
 
-  const triggerFileSelect = () => {
-    // Verificação de ART removida daqui! Agora ele abre o input de arquivo direto.
-    if (fileInputRef.current) fileInputRef.current.click()
-  }
+      if (data.success) {
+        // Define os dados extraídos do HTML real
+        setArtData({
+          numero_art: data.numero_art,
+          profissional: data.profissional,
+          status: data.status
+        });
+        console.log("ART Localizada:", data.profissional);
+      } else {
+        alert(data.message);
+        setArtData(null);
+      }
+    } catch (error) {
+      console.error("Erro ao conectar com o backend:", error);
+      alert("Erro ao conectar com o servidor. Verifique se o backend está rodando na porta 3001.");
+    }
+  };
+
+  // 2. CONTROLE DE UPLOAD
+  const triggerFileSelect = () => fileInputRef.current?.click();
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) startProcessingSimulation()
-  }
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
-  const startProcessingSimulation = () => {
-    setUploadState('uploading')
-    setProgress(0)
-    const uploadInterval = setInterval(() => {
-      setProgress((old) => {
-        if (old >= 100) {
-          clearInterval(uploadInterval)
-          setUploadState('processing')
-          simulateAIProcessing()
-          return 100
+    setUploadState('uploading');
+    
+    // Simulação de progresso de upload
+    let interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setUploadState('done');
+          
+          // Cria as URLs para visualização no Iframe
+          const newDocs = files.map(file => ({
+            id: Math.random().toString(36).substr(2, 9),
+            name: file.name,
+            url: URL.createObjectURL(file)
+          }));
+          
+          setDocuments(newDocs);
+          return 100;
         }
-        return old + 20
-      })
-    }, 400)
-  }
+        return prev + 10;
+      });
+    }, 150);
+  };
 
-  const simulateAIProcessing = () => {
-    setProgress(0)
-    const processInterval = setInterval(() => {
-      setProgress((old) => {
-        if (old >= 100) {
-          clearInterval(processInterval)
-          setUploadState('done')
-          return 100
-        }
-        return old + 10
-      })
-    }, 300)
-  }
-
+  // 3. RESETAR O PROCESSO
   const resetProcess = () => {
-    setUploadState('idle')
-    setProgress(0)
-    setRightTab('validacao')
-    setIsArtLinked(false)
-    setSitacArt('')
-    setSelectedDocument('atestado')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
+    setUploadState('idle');
+    setProgress(0);
+    setDocuments([]);
+    setArtData(null);
+    setSelectedDocument(null);
+  };
+
+  // 4. AÇÕES DO ANALISTA
+  const toggleComment = (id) => {
+    setValidationSteps(steps => steps.map(s => 
+      s.id === id ? { ...s, showComment: !s.showComment } : s
+    ));
+  };
 
   const handleJustificationChange = (id, text) => {
-    setValidationSteps((steps) =>
-      steps.map((step) => step.id === id ? { ...step, justification: text } : step)
-    )
-  }
+    setValidationSteps(steps => steps.map(s => 
+      s.id === id ? { ...s, justification: text } : s
+    ));
+  };
 
-  const toggleComment = (id) => {
-    setValidationSteps((steps) =>
-      steps.map((step) => step.id === id ? { ...step, showComment: !step.showComment } : step)
-    )
-  }
+  const handleSendReport = () => {
+    setReportStatus('sending');
+    setTimeout(() => setReportStatus('sent'), 1500);
+  };
 
-  // ── Render ─────────────────────────────────────────────
-
+  // --- RENDERIZAÇÃO ---
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <Topbar />
-
-        <div className="flex-1 overflow-auto bg-slate-50 p-6 lg:p-8 custom-scrollbar">
-          {activeTab === 'process' && (
-            <ViewProcess
-              uploadState={uploadState}
-              progress={progress}
-              sitacArt={sitacArt}
-              setSitacArt={setSitacArt}
-              isArtLinked={isArtLinked}
-              setIsArtLinked={setIsArtLinked}
-              handleLinkArt={handleLinkArt}
-              fileInputRef={fileInputRef}
-              triggerFileSelect={triggerFileSelect}
-              handleFileChange={handleFileChange}
-              resetProcess={resetProcess}
-              rightTab={rightTab}
-              setRightTab={setRightTab}
-              validationSteps={validationSteps}
-              toggleComment={toggleComment}
-              handleJustificationChange={handleJustificationChange}
-              selectedDocument={selectedDocument}
-              setSelectedDocument={setSelectedDocument}
-            />
-          )}
-          {activeTab === 'history' && <ViewHistory />}
-          {activeTab === 'reports' && <ViewReports />}
-        </div>
-      </main>
-    </div>
-  )
+    <ViewProcess 
+      // Estados
+      isSidebarOpen={isSidebarOpen}
+      toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      activeMenu={activeMenu}
+      setActiveMenu={setActiveMenu}
+      uploadState={uploadState}
+      progress={progress}
+      fileInputRef={fileInputRef}
+      documents={documents}
+      selectedDocument={selectedDocument}
+      setSelectedDocument={setSelectedDocument}
+      artData={artData}
+      validationSteps={validationSteps}
+      reportStatus={reportStatus}
+      
+      // Funções
+      triggerFileSelect={triggerFileSelect}
+      handleFileChange={handleFileChange}
+      fetchArtData={fetchArtData}
+      resetProcess={resetProcess}
+      toggleComment={toggleComment}
+      handleJustificationChange={handleJustificationChange}
+      handleSendReport={handleSendReport}
+    />
+  );
 }
+
+export default App;
